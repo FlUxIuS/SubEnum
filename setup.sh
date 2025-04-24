@@ -12,6 +12,8 @@ echo "Starting installation with debug information..."
 
 # Set GOPROXY for more reliable downloads
 export GOPROXY=https://proxy.golang.org,direct
+export GOSUMDB=off # TODO: fix that later for Amass
+
 
 # First, determine the actual Go installation location
 if command -v go >/dev/null 2>&1; then
@@ -72,7 +74,7 @@ GOlang() {
 
 Findomain() {
     printf "                                \r"
-    wget https://github.com/Findomain/Findomain/releases/download/8.2.1/findomain-linux.zip
+    wget https://github.com/Findomain/Findomain/releases/download/9.0.4/findomain-linux.zip
     unzip findomain-linux.zip
     rm findomain-linux.zip
     chmod +x findomain
@@ -93,7 +95,7 @@ Subfinder() {
 Amass() {
     printf "                                \r"
     # Use a specific version tag instead of master
-    $GOROOT/bin/go install -v github.com/owasp-amass/amass/v4/...@v4.1.0
+    $GOROOT/bin/go install -v github.com/owasp-amass/amass/v4/...@v4.2.0
     if [ $? -eq 0 ]; then
         printf "[+] Amass Installed !.\n"
     else
