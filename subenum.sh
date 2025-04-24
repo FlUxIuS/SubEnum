@@ -151,7 +151,7 @@ Assetfinder() {
 			PID="$!"
 		}
 		assetfinder --subs-only $domain > tmp-assetfinder-$domain
-		kill ${PID} 2>/dev/null
+		[[ ${PARALLEL} == True ]] || kill ${PID} 2>/dev/null
 		echo -e "$bold[*] AssetFinder$end: $(wc -l < tmp-assetfinder-$domain)"
 	}
 }
