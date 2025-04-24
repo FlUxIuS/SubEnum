@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Improved bash script to install SubEnum's dependencies 
+# Fixed bash script to install SubEnum's dependencies 
 #
 
 # Set colors for output
@@ -8,12 +8,36 @@ r="\e[31m"
 g="\e[32m"
 e="\e[0m"
 
+echo "Starting installation with debug information..."
+
 # Set GOPROXY for more reliable downloads
 export GOPROXY=https://proxy.golang.org,direct
+
+# First, determine the actual Go installation location
+if command -v go >/dev/null 2>&1; then
+    # Go is installed, get its actual path
+    GO_PATH=$(which go)
+    ACTUAL_GOROOT=$(dirname $(dirname $GO_PATH))
+    echo "Found existing Go installation at $ACTUAL_GOROOT"
+    
+    # Set environment variables with actual paths
+    export GOROOT=$ACTUAL_GOROOT
+    export GOPATH=$HOME/go
+    export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+    
+    # Create bin directory if it doesn't exist
+    mkdir -p $GOPATH/bin
+    
+    echo "Using GOROOT=$GOROOT"
+    echo "Using GOPATH=$GOPATH"
+else
+    echo "No Go installation found. Will install Go."
+fi
 
 GOlang() {
     printf "                                \r"
     sys=$(uname -m)
+    echo "Detected architecture: $sys"
     [ $sys == "x86_64" ] && wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz -O golang.tar.gz || wget https://golang.org/dl/go1.24.2.linux-386.tar.gz -O golang.tar.gz
     sudo tar -C /usr/local -xzf golang.tar.gz
     rm golang.tar.gz
@@ -26,12 +50,21 @@ GOlang() {
     # Create bin directory if it doesn't exist
     mkdir -p $GOPATH/bin
     
-    # Add to shell config if not already there
-    if ! grep -q "export GOROOT=/usr/local/go" ~/.${SHELL##*/}rc; then
-        echo 'export GOROOT=/usr/local/go' >> ~/.${SHELL##*/}rc
-        echo 'export GOPATH=$HOME/go' >> ~/.${SHELL##*/}rc
-        echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin' >> ~/.${SHELL##*/}rc
-        echo "[+] Added Go environment variables to ~/.${SHELL##*/}rc"
+    # Add to bash config file, not zsh
+    if [ -f "$HOME/.bashrc" ]; then
+        if ! grep -q "export GOROOT=/usr/local/go" $HOME/.bashrc; then
+            echo 'export GOROOT=/usr/local/go' >> $HOME/.bashrc
+            echo 'export GOPATH=$HOME/go' >> $HOME/.bashrc
+            echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin' >> $HOME/.bashrc
+            echo "[+] Added Go environment variables to $HOME/.bashrc"
+        fi
+    fi
+    
+    # Check if Go is now available
+    if [ -f "$GOROOT/bin/go" ]; then
+        echo "Go binary found at $GOROOT/bin/go"
+    else
+        echo "Go binary NOT found at $GOROOT/bin/go"
     fi
     
     printf "[+] Golang Installed !.\n"
@@ -39,7 +72,7 @@ GOlang() {
 
 Findomain() {
     printf "                                \r"
-    wget https://github.com/Findomain/Findomain/releases/download/9.0.4/findomain-linux.zip
+    wget https://github.com/Findomain/Findomain/releases/download/8.2.1/findomain-linux.zip
     unzip findomain-linux.zip
     rm findomain-linux.zip
     chmod +x findomain
@@ -48,7 +81,8 @@ Findomain() {
 
 Subfinder() {
     printf "                                \r"
-    go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+    # Explicitly use full path to go binary
+    $GOROOT/bin/go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
     if [ $? -eq 0 ]; then
         printf "[+] Subfinder Installed !.\n"
     else
@@ -59,7 +93,7 @@ Subfinder() {
 Amass() {
     printf "                                \r"
     # Use a specific version tag instead of master
-    go install -v github.com/owasp-amass/amass/v4/...@v4.2.0
+    $GOROOT/bin/go install -v github.com/owasp-amass/amass/v4/...@v4.1.0
     if [ $? -eq 0 ]; then
         printf "[+] Amass Installed !.\n"
     else
@@ -69,7 +103,7 @@ Amass() {
 
 Assetfinder() {
     printf "                                \r"
-    go install github.com/tomnomnom/assetfinder@latest
+    $GOROOT/bin/go install github.com/tomnomnom/assetfinder@latest
     if [ $? -eq 0 ]; then
         printf "[+] Assetfinder Installed !.\n"
     else
@@ -79,7 +113,7 @@ Assetfinder() {
 
 Httprobe() {
     printf "                                \r"
-    go install github.com/tomnomnom/httprobe@latest
+    $GOROOT/bin/go install github.com/tomnomnom/httprobe@latest
     if [ $? -eq 0 ]; then
         printf "[+] Httprobe Installed !.\n"
     else
@@ -95,7 +129,7 @@ Parallel() {
 
 Anew() {
     printf "                                \r"
-    go install -v github.com/tomnomnom/anew@latest
+    $GOROOT/bin/go install -v github.com/tomnomnom/anew@latest
     if [ $? -eq 0 ]; then
         printf "[+] Anew Installed !.\n"
     else
@@ -104,13 +138,19 @@ Anew() {
 }
 
 # Check if Go is installed, otherwise install it
-hash go 2>/dev/null && printf "[!] Golang is already installed.\n" || { printf "[+] Installing GOlang!" && GOlang; }
+if command -v go >/dev/null 2>&1; then 
+    printf "[!] Golang is already installed.\n"
+else
+    printf "[+] Installing GOlang!"
+    GOlang
+fi
 
-# Always ensure the environment variables are set within this script
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-mkdir -p $GOPATH/bin
+# Check if Go binary is accessible
+if [ ! -f "$GOROOT/bin/go" ]; then
+    echo "ERROR: Go binary not found at $GOROOT/bin/go"
+    echo "Please check your Go installation and try again."
+    exit 1
+fi
 
 hash findomain 2>/dev/null && printf "[!] Findomain is already installed.\n" || { printf "[+] Installing Findomain!" && Findomain; }
 hash subfinder 2>/dev/null && printf "[!] subfinder is already installed.\n" || { printf "[+] Installing subfinder!" && Subfinder; }
@@ -120,10 +160,10 @@ hash httprobe 2>/dev/null && printf "[!] Httprobe is already installed.\n" || { 
 hash parallel 2>/dev/null && printf "[!] Parallel is already installed.\n" || { printf "[+] Installing Parallel!" && Parallel; }
 hash anew 2>/dev/null && printf "[!] Anew is already installed.\n" || { printf "[+] Installing Anew!" && Anew; }
 
-# Try to source the shell config file to apply environment changes immediately
-if [ -f ~/.${SHELL##*/}rc ]; then
-    source ~/.${SHELL##*/}rc
-fi
+# DON'T try to source any shell config files to avoid zsh errors
+# if [ -f ~/.bashrc ]; then
+#    source ~/.bashrc
+# fi
 
 # List of tools to verify
 list=(
@@ -149,4 +189,10 @@ do
     fi
 done
 
-echo "Installation complete. You may need to restart your terminal or run 'source ~/.${SHELL##*/}rc' to use the installed tools."
+echo
+echo "Installation complete."
+echo "To use the Go tools, run the following commands:"
+echo "  export GOROOT=$GOROOT"
+echo "  export GOPATH=$HOME/go"
+echo "  export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin"
+echo "Or restart your terminal session."
