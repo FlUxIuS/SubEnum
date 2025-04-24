@@ -1,13 +1,22 @@
 #!/bin/bash
 #
-# bash script to install SubEnum's dependencies 
+# Improved bash script to install SubEnum's dependencies 
 #
+
+# Set colors for output
+r="\e[31m"
+g="\e[32m"
+e="\e[0m"
+
+# Set GOPROXY for more reliable downloads
+export GOPROXY=https://proxy.golang.org,direct
 
 GOlang() {
     printf "                                \r"
     sys=$(uname -m)
     [ $sys == "x86_64" ] && wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz -O golang.tar.gz || wget https://golang.org/dl/go1.24.2.linux-386.tar.gz -O golang.tar.gz
     sudo tar -C /usr/local -xzf golang.tar.gz
+    rm golang.tar.gz
     
     # Set environment variables for the current script session
     export GOROOT=/usr/local/go
@@ -17,17 +26,20 @@ GOlang() {
     # Create bin directory if it doesn't exist
     mkdir -p $GOPATH/bin
     
-    echo "[!] Add The Following Lines To Your ~/.${SHELL##*/}rc file:"
-    echo 'export GOROOT=/usr/local/go'
-    echo 'export GOPATH=$HOME/go'
-    echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin'
+    # Add to shell config if not already there
+    if ! grep -q "export GOROOT=/usr/local/go" ~/.${SHELL##*/}rc; then
+        echo 'export GOROOT=/usr/local/go' >> ~/.${SHELL##*/}rc
+        echo 'export GOPATH=$HOME/go' >> ~/.${SHELL##*/}rc
+        echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin' >> ~/.${SHELL##*/}rc
+        echo "[+] Added Go environment variables to ~/.${SHELL##*/}rc"
+    fi
     
     printf "[+] Golang Installed !.\n"
 }
 
 Findomain() {
     printf "                                \r"
-    wget https://github.com/Findomain/Findomain/releases/download/8.2.1/findomain-linux.zip
+    wget https://github.com/Findomain/Findomain/releases/download/9.0.4/findomain-linux.zip
     unzip findomain-linux.zip
     rm findomain-linux.zip
     chmod +x findomain
@@ -36,7 +48,6 @@ Findomain() {
 
 Subfinder() {
     printf "                                \r"
-    # Remove output redirection to see errors
     go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
     if [ $? -eq 0 ]; then
         printf "[+] Subfinder Installed !.\n"
@@ -47,7 +58,8 @@ Subfinder() {
 
 Amass() {
     printf "                                \r"
-    go install -v github.com/owasp-amass/amass/v4/...@master
+    # Use a specific version tag instead of master
+    go install -v github.com/owasp-amass/amass/v4/...@v4.2.0
     if [ $? -eq 0 ]; then
         printf "[+] Amass Installed !.\n"
     else
@@ -94,13 +106,11 @@ Anew() {
 # Check if Go is installed, otherwise install it
 hash go 2>/dev/null && printf "[!] Golang is already installed.\n" || { printf "[+] Installing GOlang!" && GOlang; }
 
-# If Go was just installed, we need to ensure the environment variables are set
-if ! hash go 2>/dev/null; then
-    export GOROOT=/usr/local/go
-    export GOPATH=$HOME/go
-    export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
-    mkdir -p $GOPATH/bin
-fi
+# Always ensure the environment variables are set within this script
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+mkdir -p $GOPATH/bin
 
 hash findomain 2>/dev/null && printf "[!] Findomain is already installed.\n" || { printf "[+] Installing Findomain!" && Findomain; }
 hash subfinder 2>/dev/null && printf "[!] subfinder is already installed.\n" || { printf "[+] Installing subfinder!" && Subfinder; }
@@ -110,6 +120,12 @@ hash httprobe 2>/dev/null && printf "[!] Httprobe is already installed.\n" || { 
 hash parallel 2>/dev/null && printf "[!] Parallel is already installed.\n" || { printf "[+] Installing Parallel!" && Parallel; }
 hash anew 2>/dev/null && printf "[!] Anew is already installed.\n" || { printf "[+] Installing Anew!" && Anew; }
 
+# Try to source the shell config file to apply environment changes immediately
+if [ -f ~/.${SHELL##*/}rc ]; then
+    source ~/.${SHELL##*/}rc
+fi
+
+# List of tools to verify
 list=(
     go
     findomain
@@ -121,11 +137,16 @@ list=(
     anew
 )
 
-r="\e[31m"
-g="\e[32m"
-e="\e[0m"
+echo "Verifying installations..."
 
+# Improved verification that checks both system PATH and GOPATH/bin
 for prg in ${list[@]}
 do
-    hash $prg 2>/dev/null && printf "[$prg]$g Done$e\n" || printf "[$prg]$r Something Went Wrong! Try Again Manually.$e\n"
+    if command -v $prg >/dev/null 2>&1 || [ -f "$GOPATH/bin/$prg" ]; then
+        printf "[$prg]$g Done$e\n"
+    else
+        printf "[$prg]$r Something Went Wrong! Try Again Manually.$e\n"
+    fi
 done
+
+echo "Installation complete. You may need to restart your terminal or run 'source ~/.${SHELL##*/}rc' to use the installed tools."
