@@ -193,8 +193,3 @@ done
 
 echo
 echo "Installation complete."
-echo "To use the Go tools, run the following commands:"
-echo "  export GOROOT=$GOROOT"
-echo "  export GOPATH=$HOME/go"
-echo "  export PATH=\$PATH:\$GOROOT/bin:\$GOPATH/bin"
-echo "Or restart your terminal session."
