@@ -111,6 +111,7 @@ Assetfinder() {
     else
         printf "[!] Assetfinder installation failed. Check error above.\n"
     fi
+    ln -s /root/go/bin/assetfinder /usr/bin/assetfinder
 }
 
 Httprobe() {
