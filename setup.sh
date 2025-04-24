@@ -6,7 +6,7 @@
 GOlang() {
     printf "                                \r"
     sys=$(uname -m)
-    [ $sys == "x86_64" ] && wget https://go.dev/dl/go1.17.13.linux-amd64.tar.gz -O golang.tar.gz || wget https://golang.org/dl/go1.17.13.linux-386.tar.gz -O golang.tar.gz
+    [ $sys == "x86_64" ] && wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz -O golang.tar.gz || wget https://golang.org/dl/go1.24.2.linux-386.tar.gz -O golang.tar.gz
     sudo tar -C /usr/local -xzf golang.tar.gz
     
     # Set environment variables for the current script session
