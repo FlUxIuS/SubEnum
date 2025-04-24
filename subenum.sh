@@ -69,7 +69,7 @@ spinner(){
 			)
 		for dot in ${dots[@]};
 		do
-			printf "[${dot}] ${processing} \U1F50E"
+			printf "[${dot}] ${processing} "
 			printf "                                    \r"
 			sleep 0.3
 		done
@@ -102,7 +102,7 @@ crt() {
 
 abuseipdb() {
 	[ "$silent" == True ] && curl -s "https://www.abuseipdb.com/whois/$domain" -H "user-agent: firefox" -b "abuseipdb_session=" | grep -E '<li>\w.*</li>' | sed -E 's/<\/?li>//g' | sed -e "s/$/.$domain/" | anew subenum-$domain.txt || {
-		[[ ${PARALLEL} == True ]] || { spinner "${bold}abuseipdb.sh${end}" &
+		[[ ${PARALLEL} == True ]] || { spinner "${bold}abuseipdb${end}" &
 			PID="$!"
 		}
 		curl -s "https://www.abuseipdb.com/whois/$domain" -H "user-agent: firefox" -b "abuseipdb_session=" | grep -E '<li>\w.*</li>' | sed -E 's/<\/?li>//g' | sed -e "s/$/.$domain/" | sort -u > tmp-abuseipdb-$domain
